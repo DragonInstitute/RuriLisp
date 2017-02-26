@@ -14,14 +14,14 @@ class Reader(val tokens: Sequence<String>) {
     fun current() = current
 
 }
-val a = Regex("""[\s,]*([^\s]*)""")
+
 val TOKEN_REGEX = Regex("""[\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"|;.*|[^\s\[\]{}('"`,;)]*)""")
 val ATOM_REGEX = Regex("""(^-?[0-9]+$)|(^nil$)|(^true$)|(^false$)|^"(.*)"$|:(.*)|(^[^"]*$)""")
 
-fun readStr(str: String?): Type {
+fun readStr(str: String?): RuriType {
     if (str == null) return NilType()
     val tokens = tokenize(str)
-    return read_form(Reader(tokens))
+    return readForm(Reader(tokens))
 }
 
 fun tokenize(code: String): Sequence<String> {
@@ -30,23 +30,28 @@ fun tokenize(code: String): Sequence<String> {
             .filter { it -> it != "" && !it.startsWith(";") }
 }
 
-fun read_form(reader: Reader): Type =
+fun readForm(reader: Reader): RuriType =
         when (reader.current()) {
-            null -> throw Exception("Unexpected EOF")
-            "(" -> read_list(reader, NodeList(), ")")
-            ")" -> throw Exception("Unexpected ), expect form")
-            else -> read_atom(reader)
+            null -> throw EOFException()
+            "(" -> readList(reader)
+            ")" -> throw UnexpectedException(")")
+            "[" -> readVector(reader)
+            "]" -> throw UnexpectedException("]")
+            else -> readAtom(reader)
         }
 
-fun read_list(reader: Reader, list: NodeList, end: String): Type {
+fun readVector(reader: Reader) = readSequence(reader, RuriVector(), "]", ::readForm)
+fun readList(reader: Reader) = readSequence(reader, RuriList(), ")", ::readForm)
+
+fun readSequence(reader: Reader, list: IRuriSequence, end: String, process: (Reader) -> RuriType): RuriType {
     reader.next()
     do {
         val form = when (reader.current()) {
-            null -> throw Exception("Expected ), got EOF")
+            null -> throw EOFException(")")
             end -> {
                 reader.next(); null
             }
-            else -> read_form(reader)
+            else -> process(reader)
         }
 
         if (form != null) {
@@ -56,7 +61,7 @@ fun read_list(reader: Reader, list: NodeList, end: String): Type {
     return list
 }
 
-fun read_atom(reader: Reader): Type {
+fun readAtom(reader: Reader): RuriType {
     val next = reader.next() ?: throw Exception("Expected atom, got null")
     val groups = ATOM_REGEX.find(next)?.groups ?: throw Exception("Unrecognized token: $next")
 

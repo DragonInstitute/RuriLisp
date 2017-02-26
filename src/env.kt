@@ -1,12 +1,19 @@
-class Env(var env: Tuple<String, RuriType>) {
-    constructor(env: Env): this(env.env)
+class Env(var env: Tuple<String, RuriType>, binds: Sequence<SymbolType>? = null, exprs: Sequence<RuriType>? = null) {
+
+    constructor(env: Env) : this(env.env)
+
+    init {
+        if (binds != null && exprs != null) {
+
+        }
+    }
 
     operator fun get(key: String): RuriType? {
         return env[key]
     }
 
-    operator fun set(key: String, value: RuriType): RuriType{
-         env.set(key, value)
+    operator fun set(key: String, value: RuriType): RuriType {
+        env.set(key, value)
         return value
     }
 }

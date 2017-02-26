@@ -15,8 +15,8 @@ fun eval(ast: RuriType, env: Env): RuriType =
             val first = ast.first()
             if (first is SymbolType) {
                 when (first.value) {
-                    "defun" -> evalDefine(ast, env)
-                    "let" -> evalLet(ast, env)
+                    "def!" -> evalDefine(ast, env)
+                    "let*" -> evalLet(ast, env)
 
                     else -> evalFunction(ast, env)
                 }
@@ -49,6 +49,7 @@ return eval(ast.at(2), inner)
 }
 
 fun evalAst(ast: RuriType, env: Env): RuriType = when (ast) {
+    // reduce
     is SymbolType -> env[ast.value] ?: error("${ast.value} not found")
     is RuriList -> ast.elements.fold(RuriList(), { acc, x -> acc.add(eval(x, env)); acc })
     is RuriVector -> ast.elements.fold(RuriVector(), { acc, x -> acc.add(eval(x, env)); acc })

@@ -37,11 +37,37 @@ fun readForm(reader: Reader): RuriType =
             ")" -> throw UnexpectedException(")")
             "[" -> readVector(reader)
             "]" -> throw UnexpectedException("]")
+            "{" -> readHashMap(reader)
+            "}" -> throw UnexpectedException("}")
             else -> readAtom(reader)
         }
 
 fun readVector(reader: Reader) = readSequence(reader, RuriVector(), "]", ::readForm)
 fun readList(reader: Reader) = readSequence(reader, RuriList(), ")", ::readForm)
+fun readHashMap(reader: Reader): RuriHashMap {
+    reader.next()
+    val hashMap = RuriHashMap()
+    do {
+        var value : RuriType? = null
+        val key = when (reader.current()) {
+            null -> throw Exception("expected '}', got EOF")
+            "}"  -> { reader.next(); null }
+            else -> {
+                val key = readForm(reader) as? StringType ?: throw Exception("HashMap keys must be strings or keywords")
+                value = when (reader.current()) {
+                    null -> throw Exception("expected form, got EOF")
+                    else -> readForm(reader)
+                }
+                key
+            }
+        }
+        if (key != null) {
+            hashMap.add(key, value as RuriType)
+        }
+    } while (key != null)
+
+    return hashMap
+}
 
 fun readSequence(reader: Reader, list: IRuriSequence, end: String, process: (Reader) -> RuriType): RuriType {
     reader.next()

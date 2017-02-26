@@ -35,5 +35,8 @@ interface IRuriLambda : RuriType {
 
 class FunctionType(val lambda: (RuriList) -> RuriType) : RuriType {
     fun apply(seq: RuriList): RuriType = lambda(seq)
+    override fun toString(): String {
+        return "$lambda"
+    }
 }
 

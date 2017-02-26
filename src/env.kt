@@ -1,9 +1,14 @@
-class Env(var env: Tuple<String, RuriType>, binds: Sequence<SymbolType>? = null, exprs: Sequence<RuriType>? = null) {
-    constructor(env: Env) : this(env.env)
+class Env(var env: Tuple<String, RuriType>, binds: List<SymbolType>? = null, exprs: MutableList<RuriType>? = null) {
+    constructor(env: Env, binds: List<SymbolType>? = null, exprs: MutableList<RuriType>? = null) : this(env.env, binds, exprs)
 
     init {
         if (binds != null && exprs != null) {
-
+            val bindsIter = binds.iterator()
+            val exprsIter = exprs.iterator()
+            while (bindsIter.hasNext()) {
+                val b = bindsIter.next()
+                this.set(b.value, if (exprsIter.hasNext()) exprsIter.next() else NilType())
+            }
         }
     }
 

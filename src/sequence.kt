@@ -1,7 +1,7 @@
 import java.util.*
 
 interface IRuriSequence : RuriType {
-    fun iterator(): Iterator    <RuriType>
+    fun iterator(): Iterator<RuriType>
     fun at(n: Int): RuriType
     fun len(): Int
     fun first(): RuriType

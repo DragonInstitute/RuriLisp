@@ -1,5 +1,4 @@
 class Env(var env: Tuple<String, RuriType>, binds: Sequence<SymbolType>? = null, exprs: Sequence<RuriType>? = null) {
-
     constructor(env: Env) : this(env.env)
 
     init {

@@ -1,32 +1,32 @@
 import java.util.*
 
-interface IRuriSequence : RuriType {
-    fun iterator(): Iterator    <RuriType>
-    fun at(n: Int): RuriType
+interface IRuriSequence<T> : RuriType {
+    fun iterator(): Iterator    <T>
+    fun at(n: Int): T
     fun len(): Int
-    fun first(): RuriType
-    fun rest(): IRuriSequence
-    fun add(ele: RuriType)
-    fun remove(n: Int): RuriType
+    fun first(): T
+    fun rest(): IRuriSequence<T>
+    fun add(ele: T)
+    fun remove(n: Int): T
 }
 
-abstract class RuriSequence(var elements: MutableList<RuriType>) : IRuriSequence {
+abstract class RuriSequence<T>(var elements: MutableList<T>) : IRuriSequence<T> {
     override fun iterator() = elements.asSequence().iterator()
     override fun at(n: Int) = elements.elementAt(n)
     override fun len() = elements.count()
     override fun first() = at(0)
-    override fun rest() = RuriList(elements.drop(1).toCollection(LinkedList<RuriType>()))
     override fun remove(n: Int) = elements.removeAt(n)
 
-    override fun add(ele: RuriType) {
+    override fun add(ele: T) {
         elements.add(ele)
     }
 }
 
-class RuriList(elements: LinkedList<RuriType>) : RuriSequence(elements) {
+class RuriList(elements: LinkedList<RuriType>) : RuriSequence<RuriType>(elements) {
     // List -> LinkedList
     constructor() : this(LinkedList<RuriType>())
 
+    override fun rest() = RuriList(elements.drop(1).toCollection(LinkedList<RuriType>()))
     override fun toString(): String {
         var re = "("
         elements.forEach { re += "$it, " }
@@ -36,10 +36,11 @@ class RuriList(elements: LinkedList<RuriType>) : RuriSequence(elements) {
     }
 }
 
-class RuriVector(elements: ArrayList<RuriType>) : RuriSequence(elements) {
+class RuriVector(elements: ArrayList<RuriType>) : RuriSequence<RuriType>(elements) {
     // Vector -> ArrayList
     constructor() : this(ArrayList<RuriType>())
 
+    override fun rest() = RuriVector(elements.drop(1).toCollection(ArrayList<RuriType>()))
     override fun toString(): String {
         var re = "["
         elements.forEach { re += "$it, " }

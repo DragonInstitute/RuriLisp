@@ -4,12 +4,23 @@ interface RuriType
 
 open class AtomType : RuriType
 
-open class NilType : AtomType()
-
 open class BooleanType : AtomType()
-class TrueType : BooleanType()
-class FalseType : BooleanType()
+class TrueType : BooleanType(){
+    override fun equals(other: Any?): Boolean {
+        return true
+    }
+}
+class FalseType : BooleanType(){
+    override fun equals(other: Any?): Boolean {
+        return true
+    }
+}
 
+open class NilType : AtomType(){
+    override fun equals(other: Any?): Boolean {
+        return true
+    }
+}
 open class ValuedType<T>(var value: T) : AtomType() {
     override fun toString(): String {
         return value.toString()
@@ -33,10 +44,12 @@ interface IRuriLambda : RuriType {
     fun apply(seqence: Sequence<RuriType>): RuriType
 }
 
-class FunctionType(val lambda: (RuriList) -> RuriType) : RuriType {
+open class FunctionType(val lambda: (RuriList) -> RuriType) : RuriType {
     fun apply(seq: RuriList): RuriType = lambda(seq)
     override fun toString(): String {
         return "$lambda"
     }
 }
 
+class FnFunctionType(val ast: RuriType, val params:List<SymbolType>, val env:Env, lambda:(RuriList) -> RuriType) :
+        FunctionType(lambda)

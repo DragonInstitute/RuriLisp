@@ -45,6 +45,7 @@ interface IRuriLambda : RuriType {
 }
 
 open class FunctionType(val lambda: (RuriList) -> RuriType) : RuriType {
+    var isMacro: Boolean = false
     fun apply(seq: RuriList): RuriType = lambda(seq)
     override fun toString(): String {
         return "$lambda"

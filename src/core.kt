@@ -1,10 +1,13 @@
 import java.util.*
 
-fun dynamicLoadCore() {
-    dynamicRun("(def! not (fn* (a) (if a false true))", commonEnv)
+fun dynamicLoadCore(): Env {
+    dynamicRun("(def! not (fn* (a) (if a false true))", coreEnv)
+
+
+    return coreEnv
 }
 
-val commonEnv: Env = makeEnv(
+val coreEnv: Env = makeEnv(
         makePair("+", { a: RuriList -> a.elements.reduce({ acc, x -> acc as IntegerType + x as IntegerType }) }),
         makePair("-", { a: RuriList -> a.elements.reduce({ acc, x -> acc as IntegerType - x as IntegerType }) }),
         makePair("*", { a: RuriList -> a.elements.reduce({ acc, x -> acc as IntegerType * x as IntegerType }) }),

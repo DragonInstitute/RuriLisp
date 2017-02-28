@@ -1,7 +1,8 @@
 import java.util.*
 
 fun main(args: Array<String>) {
-    rep(commonEnv)
+    val standardEnv = dynamicLoadCore()
+    rep(standardEnv)
 }
 
 fun r(): String? {
@@ -16,6 +17,8 @@ fun eval(_ast: RuriType, _env: Env): RuriType {
     var ast = _ast
     var env = _env
     while (true) {
+        ast = macroExpand(ast, env)
+
         if (ast is RuriList) {
             if (ast.len() == 0) {
                 return ast
@@ -63,6 +66,8 @@ fun eval(_ast: RuriType, _env: Env): RuriType {
                     "quasiquote" -> {
                         ast = evalQuasiQuote(ast.at(1))
                     }
+                    "defmacro!" -> return defMacro(ast, env)
+                    "macroexpand" -> return macroExpand(ast.at(1), env)
                     else -> {
                         val evaluated = evalAst(ast, env) as RuriSequence
                         val result = evaluated.first() as? FunctionType ?: throw NonFunctionException("${evaluated.first()}")
@@ -82,6 +87,31 @@ fun eval(_ast: RuriType, _env: Env): RuriType {
             return evalAst(ast, env)
         }
     }
+}
+
+fun isMacro(ast: RuriType, env: Env): Boolean {
+    val astNodes = ast as? RuriList ?: return false
+    if (astNodes.len() <= 0) return false
+    val symbol = astNodes.first() as? SymbolType ?: return false
+    val function = env[symbol.value] as? FunctionType ?: return false
+    return function.isMacro
+}
+
+fun defMacro(ast: RuriList, env: Env): RuriType {
+    val macro = eval(ast.at(2), env) as FunctionType
+    macro.isMacro = true
+    env[(ast.at(1) as SymbolType).value] = macro
+    return macro
+}
+
+fun macroExpand(_ast: RuriType, env: Env): RuriType {
+    var ast = _ast
+    while (isMacro(ast, env)) {
+        val symbol = (ast as RuriList).first() as SymbolType
+        val function = env[symbol.value] as FunctionType
+        ast = function.apply(ast.rest())
+    }
+    return ast
 }
 
 fun isPair(target: RuriType) = (target as? RuriList)?.elements?.any() ?: false
@@ -120,12 +150,12 @@ fun evalQuote(ast: RuriList, env: Env) = ast.at(1)
 
 fun evalFn(ast: RuriList, env: Env): RuriType {
     val bindList = ast.at(1) as? RuriSequence ?: throw RuriException("fn* needs a bind list as first parameter")
-    val symbols = bindList.elements.filterIsInstance<SymbolType>()
+    val params = bindList.elements.filterIsInstance<SymbolType>()
     val exprs = ast.at(2)
-    return FnFunctionType(exprs, symbols, env, {
+    return FnFunctionType(exprs, params, env, {
         s: RuriSequence ->
         // virtual env binding
-        eval(exprs, Env(env, symbols, s.elements))
+        eval(exprs, Env(env, params, s.elements))
     })
 }
 
@@ -167,13 +197,15 @@ fun evalLet(ast: RuriList, env: Env): RuriType {
     return eval(ast.at(2), inner)
 }
 
-fun evalAst(ast: RuriType, env: Env): RuriType = when (ast) {
-// reduce
-    is SymbolType -> env[ast.value] ?: error("${ast.value} not found")
-    is RuriList -> ast.elements.fold(RuriList(), { acc, x -> acc.add(eval(x, env)); acc })
-    is RuriVector -> ast.elements.fold(RuriVector(), { acc, x -> acc.add(eval(x, env)); acc })
-    is RuriHashMap -> ast.elements.entries.fold(RuriHashMap(), { a, b -> a.add(b.key, eval(b.value, env)); a })
-    else -> ast
+fun evalAst(ast: RuriType, env: Env): RuriType {
+    when (ast) {
+    // reduce
+        is SymbolType -> return env[ast.value] ?: error("${ast.value} not found")
+        is RuriList -> return ast.elements.fold(RuriList(), { acc, x -> acc.add(eval(x, env)); acc })
+        is RuriVector -> return ast.elements.fold(RuriVector(), { acc, x -> acc.add(eval(x, env)); acc })
+        is RuriHashMap -> return ast.elements.entries.fold(RuriHashMap(), { a, b -> a.add(b.key, eval(b.value, env)); a })
+        else -> return ast
+    }
 }
 
 fun p(s: RuriType) {
@@ -198,7 +230,6 @@ fun dynamicRun(input: String, env: Env) {
 }
 
 fun rep(env: Env) {
-    dynamicLoadCore()
     prompt()
     var s = r()
     while (s != null) {

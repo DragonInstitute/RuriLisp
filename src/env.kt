@@ -22,12 +22,6 @@ class Env(var env: Tuple<String, RuriType>, binds: List<SymbolType>? = null, exp
     }
 }
 
-val commonEnv: Env
-        = Env(makeTuple<String, RuriType>(Pair("+", FunctionType({ a: RuriList -> a.elements.reduce({ acc, x -> acc as IntegerType + x as IntegerType }) })),
-        Pair("-", FunctionType({ a: RuriList -> a.elements.reduce({ acc, x -> acc as IntegerType - x as IntegerType }) })),
-        Pair("*", FunctionType({ a: RuriList -> a.elements.reduce({ acc, x -> acc as IntegerType * x as IntegerType }) })),
-        Pair("/", FunctionType({ a: RuriList -> a.elements.reduce({ acc, x -> acc as IntegerType / x as IntegerType }) }))))
-
 class Tuple<K, V>(var elements: MutableMap<K, V>) {
     operator fun get(key: K): V? {
         return elements[key]

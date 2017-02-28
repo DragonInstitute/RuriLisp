@@ -1,3 +1,5 @@
+import java.util.*
+
 fun main(args: Array<String>) {
     rep(commonEnv)
 }
@@ -19,56 +21,61 @@ fun eval(_ast: RuriType, _env: Env): RuriType {
                 return ast
             } else {
                 val first = ast.first()
+                when ((first as? SymbolType)?.value) {
+                    "def!" -> {
+                        evalDefine(ast, env)
+                    }
+                    "let*" -> {
+                        // evalLet(ast, env)
+                        val inner = Env(env)
+                        val bind = ast.at(1) as? RuriSequence ?: throw Exception("Expected sequence")
+                        val iter = bind.iterator()
+                        while (iter.hasNext()) {
+                            val key = iter.next()
+                            if (!iter.hasNext()) throw Exception("Let should have even number parameter")
 
-                    when ((first as? SymbolType)?.value) {
-                        "def!" -> {
-                            evalDefine(ast, env)
+                            val value = eval(iter.next(), inner)
+                            inner[(key as SymbolType).value] = value
                         }
-                        "let*" -> {
-                            // evalLet(ast, env)
-                            val inner = Env(env)
-                            val bind = ast.at(1) as? RuriSequence ?: throw Exception("Expected sequence")
-                            val iter = bind.iterator()
-                            while (iter.hasNext()) {
-                                val key = iter.next()
-                                if (!iter.hasNext()) throw Exception("Let should have even number parameter")
-
-                                val value = eval(iter.next(), inner)
-                                inner[(key as SymbolType).value] = value
-                            }
-                            env = inner
+                        env = inner
+                        ast = ast.at(2)
+                    }
+                    "fn*" -> {
+                        return evalFn(ast, env)
+                    }
+                    "do" -> {
+                        evalDo(ast, env)
+                    }
+                    "if" -> {
+                        // evalIf(ast, env)
+                        val condition = eval(ast.at(1), env)
+                        if (condition !is FalseType && condition !is NilType) {
                             ast = ast.at(2)
-                        }
-                        "fn*" -> {
-                            return evalFn(ast, env)
-                        }
-                        "do" -> {
-                            evalDo(ast, env)
-                        }
-                        "if" -> {
-                            // evalIf(ast, env)
-                            val condition = eval(ast.at(1), env)
-                            if (condition !is FalseType && condition !is NilType) {
-                                ast = ast.at(2)
-                            } else if (ast.len() > 3) {
-                                ast = ast.at(3)
-                            } else {
-                                return NilType()
-                            }
-                        }
-                        else -> {
-                            val evaluated = evalAst(ast, env) as RuriSequence
-                            val result = evaluated.first() as? FunctionType ?: throw NonFunctionException("${evaluated.first()}")
-                            when (result) {
-                                is FnFunctionType -> {
-                                    ast = result.ast
-                                    env = Env(result.env, result.params, evaluated.rest().elements)
-                                }
-                                is FunctionType -> return result.apply(evaluated.rest())
-                                else -> throw NonFunctionException("$result")
-                            }
+                        } else if (ast.len() > 3) {
+                            ast = ast.at(3)
+                        } else {
+                            return NilType()
                         }
                     }
+                    "quote" -> {
+                        evalQuote(ast, env)
+                    }
+                    "quasiquote" -> {
+                        ast = evalQuasiQuote(ast.at(1))
+                    }
+                    else -> {
+                        val evaluated = evalAst(ast, env) as RuriSequence
+                        val result = evaluated.first() as? FunctionType ?: throw NonFunctionException("${evaluated.first()}")
+                        when (result) {
+                            is FnFunctionType -> {
+                                ast = result.ast
+                                env = Env(result.env, result.params, evaluated.rest().elements)
+                            }
+                            is FunctionType -> return result.apply(evaluated.rest())
+                            else -> throw NonFunctionException("$result")
+                        }
+                    }
+                }
 
             }
         } else {
@@ -76,6 +83,40 @@ fun eval(_ast: RuriType, _env: Env): RuriType {
         }
     }
 }
+
+fun isPair(target: RuriType) = (target as? RuriList)?.elements?.any() ?: false
+
+fun evalQuasiQuote(ast: RuriType): RuriType {
+    if (!isPair(ast)) {
+        val re = RuriList()
+        re.add(SymbolType("quote"))
+        re.add(ast)
+        return re
+    }
+
+    val sequence = ast as RuriList
+    val first = sequence.first()
+    if ((first as? SymbolType)?.value == "unquote") {
+        return sequence.at(1)
+    }
+
+    if (isPair(first)
+            && ((first as RuriList).first() as? SymbolType)?.value == "splice-unquote") {
+        val splice = RuriList()
+        splice.add(SymbolType("concat"))
+        splice.add(first.at(1))
+        splice.add(evalQuasiQuote(RuriList(sequence.elements.drop(1).toCollection(LinkedList<RuriType>()))))
+        return splice
+    }
+
+    val cons = RuriList()
+    cons.add(SymbolType("cons"))
+    cons.add(evalQuasiQuote(ast.first()))
+    cons.add(evalQuasiQuote(RuriList(sequence.elements.drop(1).toCollection(LinkedList<RuriType>()))))
+    return cons
+}
+
+fun evalQuote(ast: RuriList, env: Env) = ast.at(1)
 
 fun evalFn(ast: RuriList, env: Env): RuriType {
     val bindList = ast.at(1) as? RuriSequence ?: throw RuriException("fn* needs a bind list as first parameter")
@@ -152,7 +193,12 @@ fun p(s: RuriType) {
     }
 }
 
+fun dynamicRun(input: String, env: Env) {
+    p(eval(read(input), env))
+}
+
 fun rep(env: Env) {
+    dynamicLoadCore()
     prompt()
     var s = r()
     while (s != null) {

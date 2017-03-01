@@ -12,7 +12,7 @@ interface IRuriSequence : RuriType {
 
 abstract class RuriSequence(var elements: MutableList<RuriType>) : IRuriSequence {
     override fun iterator() = elements.asSequence().iterator()
-    override fun at(n: Int) = elements.elementAt(n)
+    override fun at(n: Int) : RuriType = elements.elementAt(n)
     override fun len() = elements.count()
     override fun first() = at(0)
     override fun rest() = RuriList(elements.drop(1).toCollection(LinkedList<RuriType>()))

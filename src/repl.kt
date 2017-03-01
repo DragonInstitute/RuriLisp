@@ -2,12 +2,24 @@ import java.util.*
 
 fun main(args: Array<String>) {
     val standardEnv = dynamicLoadCore()
-    rep(standardEnv)
+
+    while (true) {
+        prompt()
+        try {
+            println(rep(r(), standardEnv))
+        } catch(e: RuriContinue) {
+        } catch (e: NotFoundException) {
+            println(e.message)
+        } catch(e: NonFunctionException) {
+            println(e.message)
+        } catch(e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }
 
-fun r(): String? {
-    return readLine()
-}
+fun r(): String = readLine() ?: throw EOFException()
+
 
 fun read(code: String?): RuriType {
     return readStr(code)
@@ -31,11 +43,11 @@ fun eval(_ast: RuriType, _env: Env): RuriType {
                     "let*" -> {
                         // evalLet(ast, env)
                         val inner = Env(env)
-                        val bind = ast.at(1) as? RuriSequence ?: throw Exception("Expected sequence")
+                        val bind = ast.at(1) as? RuriSequence ?: throw RuriException("Expected sequence")
                         val iter = bind.iterator()
                         while (iter.hasNext()) {
                             val key = iter.next()
-                            if (!iter.hasNext()) throw Exception("Let should have even number parameter")
+                            if (!iter.hasNext()) throw RuriException("Let should have even number parameter")
 
                             val value = eval(iter.next(), inner)
                             inner[(key as SymbolType).value] = value
@@ -68,9 +80,10 @@ fun eval(_ast: RuriType, _env: Env): RuriType {
                     }
                     "defmacro!" -> return defMacro(ast, env)
                     "macroexpand" -> return macroExpand(ast.at(1), env)
+                    "try*" -> return tryCatch(ast, env)
                     else -> {
                         val evaluated = evalAst(ast, env) as RuriSequence
-                        val result = evaluated.first() as? FunctionType ?: throw NonFunctionException("${evaluated.first()}")
+                        val result = evaluated.first()
                         when (result) {
                             is FnFunctionType -> {
                                 ast = result.ast
@@ -86,6 +99,26 @@ fun eval(_ast: RuriType, _env: Env): RuriType {
         } else {
             return evalAst(ast, env)
         }
+    }
+}
+
+fun tryCatch(ast: RuriList, env: Env): RuriType {
+    try {
+        return eval(ast.at(1), env)
+    } catch (e: Exception) {
+        val thrown = e as? RuriException ?: RuriException(e.message)
+        val catch = (ast.at(2) as RuriList)
+        if ((catch.first() as? SymbolType)?.value != "catch*") {
+            println("Syntax error: expect symbol catch* but got ${catch.first()}")
+            println("But concrete syntax doesn't matter, yeah!")
+        }
+        val symbol = catch.at(1) as SymbolType
+
+        val catchBody = (ast.at(2) as RuriList).at(2)
+        val catchEnv = Env(env)
+        catchEnv[symbol.value] = thrown
+
+        return eval(catchBody, catchEnv)
     }
 }
 
@@ -185,11 +218,11 @@ fun evalDefine(ast: RuriList, env: Env): RuriType {
 
 fun evalLet(ast: RuriList, env: Env): RuriType {
     val inner = Env(env)
-    val bind = ast.at(1) as? RuriSequence ?: throw Exception("Expected sequence")
+    val bind = ast.at(1) as? RuriSequence ?: throw RuriException("Expected sequence")
     val iter = bind.iterator()
     while (iter.hasNext()) {
         val key = iter.next()
-        if (!iter.hasNext()) throw Exception("Let should have even number parameter")
+        if (!iter.hasNext()) throw RuriException("Let should have even number parameter")
 
         val value = eval(iter.next(), inner)
         inner[(key as SymbolType).value] = value
@@ -200,7 +233,7 @@ fun evalLet(ast: RuriList, env: Env): RuriType {
 fun evalAst(ast: RuriType, env: Env): RuriType {
     when (ast) {
     // reduce
-        is SymbolType -> return env[ast.value] ?: error("${ast.value} not found")
+        is SymbolType -> return env[ast.value] ?: NotFoundException(ast.value)
         is RuriList -> return ast.elements.fold(RuriList(), { acc, x -> acc.add(eval(x, env)); acc })
         is RuriVector -> return ast.elements.fold(RuriVector(), { acc, x -> acc.add(eval(x, env)); acc })
         is RuriHashMap -> return ast.elements.entries.fold(RuriHashMap(), { a, b -> a.add(b.key, eval(b.value, env)); a })
@@ -210,6 +243,7 @@ fun evalAst(ast: RuriType, env: Env): RuriType {
 
 fun p(s: RuriType) {
     when (s) {
+        // TODO: Need pretty printer but who cares
         is NilType -> println("Nil")
         is IntegerType -> println("Integer $s")
         is FalseType -> println("False")
@@ -221,7 +255,7 @@ fun p(s: RuriType) {
         is RuriVector -> println("Vector $s")
         is RuriHashMap -> println("HashMap $s")
         is FunctionType -> println("Function $s")
-        else -> println("What the hell?")
+        else -> println("$s")
     }
 }
 
@@ -229,16 +263,8 @@ fun dynamicRun(input: String, env: Env) {
     p(eval(read(input), env))
 }
 
-fun rep(env: Env) {
-    prompt()
-    var s = r()
-    while (s != null) {
-        p(eval(read(s), env))
-        prompt()
-        s = r()
-    }
-}
+fun rep(s: String, env: Env) = p(eval(read(s), env))
 
-fun prompt(text: String = "Lisp> ") {
+fun prompt(text: String = "Ruri> ") {
     print(text)
 }

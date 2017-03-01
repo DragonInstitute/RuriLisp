@@ -32,7 +32,7 @@ fun tokenize(code: String): Sequence<String> {
 
 fun readForm(reader: Reader): RuriType =
         when (reader.current()) {
-            null -> throw EOFException()
+            null -> throw RuriContinue()
             "(" -> readList(reader)
             ")" -> throw UnexpectedException(")")
             "[" -> readVector(reader)
@@ -62,14 +62,14 @@ fun readHashMap(reader: Reader): RuriHashMap {
     do {
         var value: RuriType? = null
         val key = when (reader.current()) {
-            null -> throw Exception("expected '}', got EOF")
+            null -> throw RuriException("expected '}', got EOF")
             "}" -> {
                 reader.next(); null
             }
             else -> {
-                val key = readForm(reader) as? StringType ?: throw Exception("HashMap keys must be strings or keywords")
+                val key = readForm(reader) as? StringType ?: throw RuriException("HashMap keys must be strings or keywords")
                 value = when (reader.current()) {
-                    null -> throw Exception("expected form, got EOF")
+                    null -> throw RuriException("expected form, got EOF")
                     else -> readForm(reader)
                 }
                 key
@@ -102,12 +102,12 @@ fun readSequence(reader: Reader, list: IRuriSequence, end: String, process: (Rea
 }
 
 fun readAtom(reader: Reader): RuriType {
-    val next = reader.next() ?: throw Exception("Expected atom, got null")
-    val groups = ATOM_REGEX.find(next)?.groups ?: throw Exception("Unrecognized token: $next")
+    val next = reader.next() ?: throw RuriException("Expected atom, got null")
+    val groups = ATOM_REGEX.find(next)?.groups ?: throw RuriException("Unrecognized token: $next")
 
 
     return if (groups[1]?.value != null) {
-        IntegerType(groups[1]?.value?.toLong() ?: throw Exception("Unparseable token: $next, should be number"))
+        IntegerType(groups[1]?.value?.toLong() ?: throw RuriException("Unparseable token: $next, should be number"))
     } else if (groups[2]?.value != null) {
         NilType()
     } else if (groups[3]?.value != null) {
@@ -121,6 +121,6 @@ fun readAtom(reader: Reader): RuriType {
     } else if (groups[7]?.value != null) {
         SymbolType(groups[7]?.value as String)
     } else {
-        throw Exception("Unrecognized token: $next")
+        throw RuriException("Unrecognized token: $next")
     }
 }

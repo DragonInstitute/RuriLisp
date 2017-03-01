@@ -26,7 +26,7 @@ fun eval(_ast: RuriType, _env: Env): RuriType {
                 val first = ast.first()
                 when ((first as? SymbolType)?.value) {
                     "def!" -> {
-                        evalDefine(ast, env)
+                        return evalDefine(ast, env)
                     }
                     "let*" -> {
                         // evalLet(ast, env)
@@ -61,7 +61,7 @@ fun eval(_ast: RuriType, _env: Env): RuriType {
                         }
                     }
                     "quote" -> {
-                        evalQuote(ast, env)
+                        return evalQuote(ast, env)
                     }
                     "quasiquote" -> {
                         ast = evalQuasiQuote(ast.at(1))

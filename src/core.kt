@@ -1,7 +1,7 @@
 import java.util.*
 
 fun dynamicLoadCore(): Env {
-    dynamicRun("(def! not (fn* (a) (if a false true))", coreEnv)
+    dynamicRun("(def! not (fn* (a) (if a false true)))", coreEnv)
 
 
     return coreEnv
@@ -21,7 +21,6 @@ val coreEnv: Env = makeEnv(
         makePair("concat", { a: RuriSequence ->
             RuriList(a.elements.flatMap({ it -> (it as RuriSequence).elements }).toCollection(LinkedList<RuriType>()))
         })
-
 
 )
 

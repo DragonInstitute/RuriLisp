@@ -29,8 +29,8 @@ class RuriList(elements: LinkedList<RuriType>) : RuriSequence(elements) {
 
     override fun toString(): String {
         var re = "("
-        elements.forEach { re += "$it, " }
-        re = re.dropLast(2)
+        elements.forEach { re += "$it " }
+        re = re.dropLast(1)
         re += ")"
         return re
     }
@@ -42,8 +42,8 @@ class RuriVector(elements: ArrayList<RuriType>) : RuriSequence(elements) {
 
     override fun toString(): String {
         var re = "["
-        elements.forEach { re += "$it, " }
-        re = re.dropLast(2)
+        elements.forEach { re += "$it " }
+        re = re.dropLast(1)
         re += "]"
         return re
     }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Ruri.iml" filepath="$PROJECT_DIR$/.idea/modules/Ruri.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Ruri_main.iml" filepath="$PROJECT_DIR$/.idea/modules/Ruri_main.iml" group="Ruri" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Ruri_test.iml" filepath="$PROJECT_DIR$/.idea/modules/Ruri_test.iml" group="Ruri" />
+    </modules>
+  </component>
+</project>

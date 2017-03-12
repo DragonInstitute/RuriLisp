@@ -1,0 +1,8 @@
+(defun orc-battle ()
+  (init-monsters)
+  (init-player)
+  (game-loop)
+  (when (player-dead)
+    (print "You have been killed. Game Over."))
+  (when (monsters-dead)
+    (print "Congratulations! You have vanquished all of your foes.")))
